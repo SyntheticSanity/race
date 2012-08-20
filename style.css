@@ -1,0 +1,11 @@
+body {
+	background-color: #666;
+	color: #ddd;
+	font-family: sans-serif;
+	text-shadow: 0 2px 0 rgba(0, 0, 0, 0.9);
+	margin: 0;
+	padding: 0;
+}
+canvas {
+	display: block;
+}

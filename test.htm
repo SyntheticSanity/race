@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Race Test</title>
+		<style>
+			body, html {
+				margin: 0;
+				padding: 0;
+				background: #333;
+				color: #ddd;
+				font-family: sans-serif;
+				font-weight: bold;
+			}
+			canvas {
+				display: block;
+			}
+			#help {
+				position: absolute;
+				left: 8px;
+				top: 8px;
+				background: rgba(0,0,0,0.3);
+				text-shadow: 0 2px 0 #000;
+				list-style: none;
+				padding: 8px;
+				margin: 8px;
+			}
+		</style>
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r50/three.min.js"></script>
+		<script src="js/lib/audionode.js"></script>
+		<script src="js/gamepad.js"></script>
+		<script src="test.js"></script>
+		<script type="x-shader/x-vertex" id="shader_vert">
+
+			varying vec2 vUv;
+
+			void main() {
+
+				vUv = uv;
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1);
+
+			}
+
+		</script>
+		<script type="x-shader/x-fragment" id="shader_frag">
+
+			uniform sampler2D tDiffuse;
+			uniform sampler2D tLuminance;
+			uniform sampler2D tAO;
+
+			uniform float fHeat;
+
+			uniform int rPass;
+
+			varying vec2 vUv;
+
+			void main() {
+
+				vec3 col = texture2D(tDiffuse, vUv).rgb;
+				vec3 ao = texture2D(tAO, vUv).rgb;
+				vec3 lum = texture2D(tLuminance, vUv).rgb;
+
+				if (rPass == 0) {
+					gl_FragColor = vec4(max(col*ao,lum*fHeat), 1.0);
+				} else if (rPass == 1) {
+					gl_FragColor = vec4(lum*fHeat, 1.0);
+				} else {
+					gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+				}
+
+			}
+
+		</script>
+	</head>
+	<body>
+		<ul id="help">
+			<li>Drag left mouse button to rotate.</li>
+			<li>Drag middle mouse button to zoom.</li>
+		</ul>
+	</body>
+</html>
