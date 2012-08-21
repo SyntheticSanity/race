@@ -8,6 +8,7 @@ var player = {
 	position: new THREE.Vector3(),
 	speed: 0,
 	direction: 0,
+	oversteer: 0,
 	geom: null,
 	mat: null,
 	mesh: null,
@@ -24,6 +25,8 @@ var mat, mat2;
 var pse, psc;
 
 var actx, samples = {}, sounds = [];
+
+var ctrlAcc, ctrlDec, ctrlStr = 0;
 
 function init() {
 	renderer = new THREE.WebGLRenderer({antialias:true});
@@ -170,14 +173,16 @@ function loop() {
 	}
 
 	if (p.length() < 0.1) {
-		p.set(Math.sin(player.direction) * 20, 14, Math.cos(player.direction) * 20);
+		p.set(Math.sin(player.direction) * 20, 8, Math.cos(player.direction) * 20);
 	}
 
-	var ctrlAcc = (typeof gamepad !== 'undefined' ? gamepad.rightShoulder1 : keys[38] * 1 || keys[87] * 1 || 0),
-		ctrlDec = (typeof gamepad !== 'undefined' ? gamepad.leftShoulder1 : keys[40] * 1 || keys[83] * 1 || 0),
-		ctrlStr = (typeof gamepad !== 'undefined' ? (Math.abs(gamepad.leftStickX) > gamepad.deadZoneLeftStick ? gamepad.leftStickX : 0) : (keys[37]*-1+keys[39]*1) || (keys[65]*-1+keys[68]*1) || 0);
+	ctrlAcc = (typeof gamepad !== 'undefined' ? gamepad.rightShoulder1 : keys[38] * 1 || keys[87] * 1 || 0);
+	ctrlDec = (typeof gamepad !== 'undefined' ? gamepad.leftShoulder1 : keys[40] * 1 || keys[83] * 1 || 0);
+	var str = (typeof gamepad !== 'undefined' ? (Math.abs(gamepad.leftStickX) > gamepad.deadZoneLeftStick ? gamepad.leftStickX : 0) : (keys[37]*-1+keys[39]*1) || (keys[65]*-1+keys[68]*1) || 0);
 
-	ctrlStr = ctrlStr * (2 - (player.speed > 1 ? 1 : player.speed));
+	str = str * (2 - (player.speed > 1 ? 1 : player.speed));
+
+	ctrlStr += (str - ctrlStr) * 0.1 / (player.speed > 1 ? player.speed : 1);
 
 	player.speed = player.speed + (ctrlAcc + -0.3 * (1 + 10 * ctrlDec)) * delta;
 	player.rpm = player.speed / 3;
@@ -194,13 +199,14 @@ function loop() {
 	m.rotateByAxis(new THREE.Vector3(1, 0, 0), player.rpm * 0.1);
 	m.rotateByAxis(new THREE.Vector3(0, 1, 0), player.direction);
 	//player.mesh.rotation = m.multiplyVector3();
-	player.mesh.rotation.setY(player.direction);
+	player.mesh.rotation.setY(player.direction - ctrlStr * player.speed * 0.2);
+	player.mesh.rotation.setZ(ctrlStr * -0.25 + ctrlStr * player.speed * -0.1);
 
 
 	camera.position.set(
-		camera.position.x + ((player.position.x + p.x) - camera.position.x) * delta * 10,
-		camera.position.y + ((player.position.y + p.y) - camera.position.y) * delta * 10,
-		camera.position.z + ((player.position.z + p.z) - camera.position.z) * delta * 10
+		(player.position.x + p.x),
+		(player.position.y + p.y),
+		(player.position.z + p.z)
 	);
 
 	/*camera.position.addSelf(new THREE.Vector3(
