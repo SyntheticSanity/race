@@ -90,7 +90,7 @@
 					if (nuv.x >= 1.0) nuv.x -= 1.0;
 				}
 
-				gl_FragColor = vec4(fHeat * 0.2, fHeat * 0.8, fHeat, (1.0 - vUv.x * 1.5) * noise * (fHeat + 1.0));
+				gl_FragColor = vec4(fHeat * 0.2 + 0.1, fHeat * 0.8 + 0.24, fHeat + 0.3, (1.0 - vUv.x * 1.5) * noise * fHeat);
 				//gl_FragColor = vec4(1.0 - vUv.x * 1.5, 0.0, 0.0, 1.0);
 
 			}

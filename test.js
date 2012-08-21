@@ -33,7 +33,6 @@ function init() {
 	scene = new THREE.Scene();
 
 	camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-	camera.position.set(-20, 20, -20);
 	camera.lookAt(new THREE.Vector3(0,0,0));
 	scene.add(camera);
 
@@ -151,14 +150,14 @@ function loop() {
 
 		player.rpm += (gamepad.rightShoulder1 - player.rpm) * delta * 3;
 
-		p = new THREE.Vector3(-gamepad.rightStickX, 0, -gamepad.rightStickY);
+		/*p = new THREE.Vector3(-gamepad.rightStickX, 0, -gamepad.rightStickY);
 		if (p.length() < 0.4) {
 			p.set(0, 0.7, 1);
 		} else {
 			p.normalize();
 			p.setY(0.7);
 		}
-		p = p.multiplyScalar(20);
+		p = p.multiplyScalar(20);*/
 
 
 	} else {
@@ -171,7 +170,7 @@ function loop() {
 	}
 
 	if (p.length() < 0.1) {
-		p.set(0, 14, 20);
+		p.set(Math.sin(player.direction) * 20, 14, Math.cos(player.direction) * 20);
 	}
 
 	var ctrlAcc = (typeof gamepad !== 'undefined' ? gamepad.rightShoulder1 : keys[38] * 1 || keys[87] * 1 || 0),
@@ -198,15 +197,17 @@ function loop() {
 	player.mesh.rotation.setY(player.direction);
 
 
-	camera.position.set(camera.position.x + ((player.position.x + p.x) - camera.position.x) * delta * 16,
-	camera.position.y + ((player.position.y + p.y) - camera.position.y) * delta * 16,
-	camera.position.z + ((player.position.z + p.z) - camera.position.z) * delta * 16);
+	camera.position.set(
+		camera.position.x + ((player.position.x + p.x) - camera.position.x) * delta * 10,
+		camera.position.y + ((player.position.y + p.y) - camera.position.y) * delta * 10,
+		camera.position.z + ((player.position.z + p.z) - camera.position.z) * delta * 10
+	);
 
-	camera.position.addSelf(new THREE.Vector3(
+	/*camera.position.addSelf(new THREE.Vector3(
 		((player.position.x + p.x) - camera.position.x) * delta * 16,
 		((player.position.y + p.y) - camera.position.y) * delta * 16,
 		((player.position.z + p.z) - camera.position.z) * delta * 16
-	));
+	));*/
 	camera.lookAt(player.position);
 
 	//mat.uniforms.fHeat.value = Math.sin(Date.now() % 2000 / 1000 * Math.PI) * 0.75 + 1 + 0.2 * Math.random();
