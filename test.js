@@ -121,6 +121,7 @@ function init() {
 	window.addEventListener('keydown', function(e) { keys[e.keyCode] = true; }, false);
 	window.addEventListener('keyup', function(e) { keys[e.keyCode] = false; }, false);
 	window.addEventListener('resize', function() { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); }, false);
+	for (var i = 0; i < 255; i++) keys[i] = false;
 
 	setInterval(loop, 16);
 	requestAnimationFrame(draw);
@@ -173,35 +174,45 @@ function loop() {
 		p.set(0, 14, 20);
 	}
 
+	var ctrlAcc = (typeof gamepad !== 'undefined' ? gamepad.rightShoulder1 : keys[38] * 1 || keys[87] * 1 || 0),
+		ctrlDec = (typeof gamepad !== 'undefined' ? gamepad.leftShoulder1 : keys[40] * 1 || keys[83] * 1 || 0),
+		ctrlStr = (typeof gamepad !== 'undefined' ? (Math.abs(gamepad.leftStickX) > gamepad.deadZoneLeftStick ? gamepad.leftStickX : 0) : (keys[37]*-1+keys[39]*1) || (keys[65]*-1+keys[68]*1) || 0);
 
+	ctrlStr = ctrlStr * (2 - (player.speed > 1 ? 1 : player.speed));
 
-	//player.speed = player.speed + player.rpm * delta;
+	player.speed = player.speed + (ctrlAcc + -0.3 * (1 + 10 * ctrlDec)) * delta;
+	player.rpm = player.speed / 3;
 	//player.speed -= 0.2 * delta;
 	//player.speed += 0.01;
-	//if (player.speed < 0) player.speed = 0;
+	if (player.speed < 0) player.speed = 0;
 
-	player.direction = (player.direction - (Math.abs(gamepad.leftStickX) > gamepad.deadZoneLeftStick ? gamepad.leftStickX * delta : 0)) % (Math.PI * 2);
+	player.direction = (player.direction - ctrlStr * delta) % (Math.PI * 2);
 
-	player.mesh.position.set( Math.cos(player.direction) * player.speed * 100 * delta, 0, Math.sin(player.direction) * player.speed * 100 * delta );
+	player.position.set(player.position.x - Math.sin(player.direction) * player.speed * 100 * delta, player.position.y, player.position.z - Math.cos(player.direction) * player.speed * 100 * delta);
+	player.mesh.position.set( player.position.x, 0.4 + 0.2 * player.rpm + Math.sin(Date.now() % 2000 / 1000 * Math.PI) * 0.1, player.position.z );
+
+	var m = new THREE.Matrix4();
+	m.rotateByAxis(new THREE.Vector3(1, 0, 0), player.rpm * 0.1);
+	m.rotateByAxis(new THREE.Vector3(0, 1, 0), player.direction);
+	//player.mesh.rotation = m.multiplyVector3();
 	player.mesh.rotation.setY(player.direction);
-	player.mesh.rotation.setX(player.rpm * -0.1);
 
 
-	camera.position.set(camera.position.x + ((player.mesh.position.x + p.x) - camera.position.x) * delta * 16,
-	camera.position.y + ((player.mesh.position.y + p.y) - camera.position.y) * delta * 16,
-	camera.position.z + ((player.mesh.position.z + p.z) - camera.position.z) * delta * 16);
+	camera.position.set(camera.position.x + ((player.position.x + p.x) - camera.position.x) * delta * 16,
+	camera.position.y + ((player.position.y + p.y) - camera.position.y) * delta * 16,
+	camera.position.z + ((player.position.z + p.z) - camera.position.z) * delta * 16);
 
 	camera.position.addSelf(new THREE.Vector3(
-		((player.mesh.position.x + p.x) - camera.position.x) * delta * 16,
-		((player.mesh.position.x + p.y) - camera.position.y) * delta * 16,
-		((player.mesh.position.x + p.z) - camera.position.z) * delta * 16
+		((player.position.x + p.x) - camera.position.x) * delta * 16,
+		((player.position.y + p.y) - camera.position.y) * delta * 16,
+		((player.position.z + p.z) - camera.position.z) * delta * 16
 	));
-	camera.lookAt(player.mesh.position);
+	camera.lookAt(player.position);
 
 	//mat.uniforms.fHeat.value = Math.sin(Date.now() % 2000 / 1000 * Math.PI) * 0.75 + 1 + 0.2 * Math.random();
 	mat.uniforms.fHeat.value = (player.rpm * 2.25 + 0.25) * (1.0 + 0.2 * Math.random());
 	mat2.uniforms.fHeat.value = player.rpm * 2.25 + 0.25;
-	mat2.uniforms.fTime.value = (mat2.uniforms.fTime.value + delta * player.rpm * 10) % 1;
+	mat2.uniforms.fTime.value = (mat2.uniforms.fTime.value + delta * (player.rpm * 10 + 0.1)) % 1;
 
 	// Set audio speed?
 	if (sounds.length > 0) sounds[0].playbackRate.value = (player.rpm + 0.12) * 2 > 0.35 ? (player.rpm + 0.12) * 2 : 0.35;
