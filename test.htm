@@ -31,11 +31,22 @@
 		<script type="x-shader/x-vertex" id="shader_vert">
 
 			varying vec2 vUv;
+			varying vec3 vNormal;
+			varying float fOpacity;
 
 			void main() {
 
+				vec4 mvPosition =  modelViewMatrix * vec4(position, 1.0);
+				vec4 mPosition =  modelMatrix * vec4(position, 1.0);
+				vec3 I = mPosition.xyz - cameraPosition;
+				vec3 nWorld = normalize( mat3( modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz ) * normal );
+
+				fOpacity = max(0.0, 1.0 - pow(1.0 + dot( normalize( I ), nWorld ), 0.6) * 1.1) * 2.6;
+
+				vNormal = normal * normalMatrix;
+				//mNormal = modelViewMatrix;
 				vUv = uv;
-				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1);
+				gl_Position = projectionMatrix * mvPosition;
 
 			}
 
@@ -74,6 +85,8 @@
 			uniform float fTime;
 
 			varying vec2 vUv;
+			varying vec3 vNormal;
+			varying float fOpacity;
 
 			void main() {
 
@@ -86,12 +99,26 @@
 				vec3 noise = vec3(0.0, 0.0, 0.0);
 				for (int i = 0; i < 15; i++) {
 					noise += texture2D(tNoise, nuv).rgb * 0.1;
-					nuv.x += fHeat * fHeat * 0.001;
+					nuv.x += fHeat * fHeat * 0.004 + 0.03;
 					if (nuv.x >= 1.0) nuv.x -= 1.0;
 				}
 
-				gl_FragColor = vec4(fHeat * 0.2 + 0.1, fHeat * 0.8 + 0.24, fHeat + 0.3, (1.0 - vUv.x * 1.5) * noise * fHeat);
+				float pwr = vUv.x * 1.8 - 0.3;
+				pwr = (1.0 - sin(1.0 - min(vUv.x * 4.0, 1.0))) * (1.5 - atan(pwr * pwr * 16.0)) * noise.x * fHeat;
+
+				//float falloff = 1.0 - abs(dot(vec3(0.0, 0.0, 1.0), (vec4(vNormal, 1.0) * mNormal).xyz));
+
+				//gl_FragColor = vec4(vNormal, fOpacity);
+				//gl_FragColor = vec4(fOpacity, fOpacity, fOpacity, 1.0);
+
+				gl_FragColor = vec4(
+					fHeat * 0.2 + 0.1,
+					fHeat * 0.8 + 0.24,
+					fHeat + 0.3,
+					pwr * fOpacity
+				);
 				//gl_FragColor = vec4(1.0 - vUv.x * 1.5, 0.0, 0.0, 1.0);
+				//(1.0 - sin(vUv.x * 1.6)) * (1.0 - sin(1.0 - min(vUv.x * 4.0, 1.0))) * noise * fHeat
 
 			}
 
