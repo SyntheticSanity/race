@@ -25,7 +25,10 @@ var mat, mat2;
 
 var pse, psc;
 
-var actx, samples = {}, sounds = [];
+var actx, samples = {}, bgm = {}, sounds = [];
+var bgmFilter;
+
+var assets = {};
 
 var ctrlAcc, ctrlDec, ctrlStr = 0;
 
@@ -80,7 +83,9 @@ function init() {
 		transparent: true
 	});
 	mat2.depthWrite = false;
+	assets.racer = 0;
 	loader.load('models/racer.js', function(geom) {
+		assets.racer = 1;
 		var mesh = new THREE.Mesh(geom, mat);
 		player.geom = geom;
 		player.mat = mat;
@@ -108,12 +113,24 @@ function init() {
 
 	if (typeof webkitAudioContext !== 'undefined') {
 		actx = new webkitAudioContext();
-		if (samples.engine === undefined) loadSound('engine', function(buffer) {
+		if (samples.engine === undefined) loadSound('engine.wav', function(buffer) {
 			var src = actx.createBufferSource();
 			sounds.push(src);
 			src.buffer = buffer;
 			src.loop = true;
 			src.connect(actx.destination);
+			src.noteOn(0);
+		});
+		if (samples.avast === undefined) loadSound('bgm_avast.ogg', function(buffer) {
+			var src = actx.createBufferSource();
+			bgmFilter = actx.createBiquadFilter();
+			sounds.push(src);
+			src.buffer = buffer;
+			src.loop = true;
+			bgmFilter.type = 0;
+			bgmFilter.frequency.value = 200;
+			src.connect(bgmFilter);
+			bgmFilter.connect(actx.destination);
 			src.noteOn(0);
 		});
 	}
@@ -135,7 +152,16 @@ function init() {
 	for (var i = 0; i < 255; i++) keys[i] = false;
 
 	setInterval(loop, 16);
+	setInterval(musicUpdate, 100);
 	requestAnimationFrame(draw);
+}
+
+function musicUpdate() {
+	// Set audio speed?
+	if (sounds.length > 0) sounds[0].playbackRate.value = (player.rpm + 0.12) * 2 > 0.35 ? (player.rpm + 0.12) * 2 : 0.35;
+	if (bgmFilter !== 'undefined') {
+		bgmFilter.frequency.value = 48000 * Math.sin(Math.min(player.speed * player.speed * player.speed / 70 + 0.003, 1.6));
+	}
 }
 
 function loop() {
@@ -157,7 +183,7 @@ function loop() {
 			psc.appendChild(makeImg(gamepad.images.rightStick));
 			psc.innerHTML += 'Camera<br />';
 			psc.appendChild(makeImg(gamepad.images.rightShoulder1));
-			psc.innerHTML += 'Throttle';
+			psc.innerHTML += 'Throttle<br />';
 		}
 
 		player.rpm += (gamepad.rightShoulder1 - player.rpm) * delta * 3;
@@ -230,8 +256,13 @@ function loop() {
 	mat2.uniforms.fTime.value = (mat2.uniforms.fTime.value + delta * (player.rpm * 12 + 0.8)) % 1;
 	mat2.uniforms.mNorm.value = player.mesh.matrixWorld;
 
-	// Set audio speed?
-	if (sounds.length > 0) sounds[0].playbackRate.value = (player.rpm + 0.12) * 2 > 0.35 ? (player.rpm + 0.12) * 2 : 0.35;
+	var i = 0, prg = 0;
+	for (var a in assets) {
+		i++;
+		prg += assets[a];
+	}
+	document.getElementById('progress').innerHTML = Math.round((prg / i) * 1000) / 10;
+
 }
 
 
@@ -253,12 +284,17 @@ function buildTrack(points) {
 
 function loadSound(sound, callback) {
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', 'sfx/'+sound+'.wav', true);
+	xhr.open('GET', 'sfx/'+sound, true);
 	xhr.responseType = 'arraybuffer';
 
+	assets[sound] = 0;
+	xhr.addEventListener('progress', function(e) {
+		assets[sound] = e.loaded / (e.total || 1);
+	}, false);
 	xhr.addEventListener('load', function() {
+		assets[sound] = 1;
 		actx.decodeAudioData(xhr.response, function(buffer) {
-			samples[sound] = buffer;
+			samples[sound.substr(0,sound.indexOf('.'))] = buffer;
 			if (typeof callback == 'function') {
 				callback(buffer);
 			}

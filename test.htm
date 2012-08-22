@@ -23,6 +23,20 @@
 				list-style: none;
 				padding: 8px;
 				margin: 8px;
+				display: none;
+			}
+			.prog {
+				background: rgba(0,0,0,0.3);
+				text-shadow: 0 2px 0 #000;
+				position: absolute;
+				left: 50%;
+				bottom: 48px;
+				margin: -32px -128px;
+				padding: 0;
+				width: 256px;
+				height: 32px;
+				line-height: 32px;
+				text-align: center;
 			}
 		</style>
 		<script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r50/three.min.js"></script>
@@ -130,5 +144,6 @@
 			<li id="padstate">Player 1 Press Start</li>
 			<li id="padcontrols"></li>
 		</ul>
+		<div class="prog">Loading: <span id="progress">0</span>%</div>
 	</body>
 </html>
